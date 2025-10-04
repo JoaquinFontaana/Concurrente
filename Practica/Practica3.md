@@ -709,3 +709,63 @@ Process Repositor{
 }
 
 ```
+---
+## 8
+En un entrenamiento de fútbol hay 20 jugadores que forman 4 equipos (cada jugador conoce el equipo al cual pertenece llamando a la función DarEquipo()). Cuando un equipo está listo (han llegado los 5 jugadores que lo componen), debe enfrentarse a otro equipo que también esté listo (los dos primeros equipos en juntarse juegan en la cancha 1, y los otros dos equipos juegan en la cancha 2). Una vez que el equipo conoce la cancha en la que juega, sus jugadores se dirigen a ella. Cuando los 10 jugadores del partido llegaron a la cancha comienza el partido, juegan durante 50 minutos, y al terminar todos los jugadores del partido se retiran (no es necesario que se esperen para salir).
+
+``` C
+Monitor Cordinador{
+    contador[1..4]=0
+    cond espera[1..4]
+    canchaEquipo[1..4]
+    cant=0
+
+    procedure esperarEquipo(equipo){
+        contador[equipo]++
+        if(contador[equipo] < 5){
+            wait(espera[equipo])
+        }
+        else{
+            cant++
+            if(cant <= 2){
+                canchaEquipo[equipo]=1
+            }
+            else{
+                canchaEquipo[equipo]=2
+            }
+            signalAll(espera[equipo])
+        }
+    }
+
+    procedure leerCancha(cancha:out,equipo){
+        cancha=canchaEquipo[equipo]
+    }
+}
+
+Monitor Cancha[1..2]{
+    cant=0
+    cond espera;
+
+    procedure esperarJugadores(){
+        cant++
+        if(cant < 10){
+            wait(espera)
+        }
+        else{
+            signaAll(espera)
+        }
+    }
+}
+
+Process Jugador[1..20]{
+    equipo= darEquipo()
+    Coordinador.esperarEquipo(equipo)
+    cancha=...
+    Coordinador.leerCancha(cancha,equipo)
+    Cancha[cancha].esperarJugadores()
+    delay(10)
+}
+
+
+
+```
