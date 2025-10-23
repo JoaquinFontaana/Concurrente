@@ -299,5 +299,144 @@ Process Cliente[id:1..C]{
     colaPago.send(datosPago,id,cabina)
     facturas[id].receive(factura)
 }
+```
+---
+### 5
+Resolver la administración de 3 impresoras de una oficina. Las impresoras son usadas por N administrativos, los cuales están continuamente trabajando y cada tanto envían documentos a imprimir. Cada impresora, cuando está libre, toma un documento y lo imprime, de acuerdo con el orden de llegada.
 
+a) Implemente una solución para el problema descrito.
+
+b) Modifique la solución implementada para que considere la presencia de un director de oficina que también usa las impresas, el cual tiene prioridad sobre los administrativos.
+
+c) Modifique la solución (a) considerando que cada administrativo imprime 10 trabajos y que todos los procesos deben terminar su ejecución.
+
+d) Modifique la solución (b) considerando que tanto el director como cada administrativo imprimen 10 trabajos y que todos los procesos deben terminar su ejecución.
+
+e) Si la solución al ítem d) implica realizar Busy Waiting, modifíquela para evitarlo.
+Nota: ni los administrativos ni el director deben esperar a que se imprima el documento.
+## A
+```C
+chan pendientes(string,int)
+chan impresiones[1..N](string)
+Process Administrativo[id:1..N]{
+    string archivo
+    string impresion
+    while true{
+        if (){
+            pendientes.send(archivo,id)
+            impresiones[id].receive(impresion)
+        }
+        (){
+            //Trabaja
+        }
+    }
+}
+Process Impresora[1..3]{
+    string archivo
+    string impresion
+    int id
+    while true {
+        pendientes.receive(archivo,id)
+        //imprime el archivo
+        impresiones[id].send(impresion)
+    }
+}
+```
+## B
+```C
+chan pendientes(string,int)
+chan impresiones[1..N](string)
+chan impresionDirector(string)
+chan pendientesDirector(string)
+
+Process Administrativo[id:1..N]{
+    string archivo
+    string impresion
+    while true{
+        if (){
+            pendientes.send(archivo,id)
+            impresiones[id].receive(impresion)
+        }
+        (){
+            //Trabaja
+        }
+        end if
+    }
+}
+
+Proces Director{
+    string archivo
+    string impresion
+    while true{
+        if (){
+            pendientesDirector.send(archivo)
+            impresionesDirector.receive(impresion)
+        }
+        (){
+            //Trabaja
+        }
+        end if
+    }
+}
+
+Process Impresora[1..3]{
+    string archivo
+    string impresion
+    int id
+    while true {
+        if(empty(pendientesDirector) && !empty(pendientes)){
+            pendientes.receive(archivo,id)
+            //imprime el archivo
+            impresiones[id].send(impresion)
+        }
+        (!empty(pendientesDirector)){
+            pendientesDirector.receive(archivo)
+            //imprime el archivo
+            impresionesDirector.send(impresion)
+        }
+    }
+}
+```
+### C
+```C
+chan pendientes(string,int)
+chan impresiones[1..N](string)
+chan aviso[1..3](int)
+Process Administrativo[id:1..N]{
+    string archivo
+    string impresion
+    int cant=0
+    while cant < 10{
+        if (){
+            pendientes.send(archivo,id)
+            impresiones[id].receive(impresion)
+            cant++
+            if(cant==10){
+                for i=1 to 3{
+                    aviso[i].send(1)
+                }
+            }
+        }
+        (){
+            //Trabaja
+        }
+    }
+}
+Process Impresora[id:1..3]{
+    string archivo
+    string impresion
+    int i
+    int terminaron=0
+    while terminaron < N {
+        if(!empty(pendientes)){
+            pendientes.receive(archivo,i)
+            //imprime el archivo
+            impresiones[i].send(impresion)
+        }
+        (!aviso[id].empty()){
+            aviso.receive(i)
+            terminaron++
+        }
+    }
+}
 ```
