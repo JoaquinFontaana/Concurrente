@@ -324,6 +324,8 @@ Process Administrativo[id:1..N]{
     while true{
         if (){
             pendientes.send(archivo,id)
+        }
+        (!empty(impresiones[id])){
             impresiones[id].receive(impresion)
         }
         (){
@@ -355,6 +357,8 @@ Process Administrativo[id:1..N]{
     while true{
         if (){
             pendientes.send(archivo,id)
+        }
+        (!empty(impresiones[id])){
             impresiones[id].receive(impresion)
         }
         (){
@@ -370,6 +374,8 @@ Proces Director{
     while true{
         if (){
             pendientesDirector.send(archivo)
+        }
+        (!empty(impresionesDirector)){
             impresionesDirector.receive(impresion)
         }
         (){
@@ -402,15 +408,19 @@ Process Impresora[1..3]{
 chan pendientes(string,int)
 chan impresiones[1..N](string)
 chan aviso[1..3](int)
+
 Process Administrativo[id:1..N]{
     string archivo
     string impresion
     int cant=0
-    while cant < 10{
-        if (){
+    termino=false
+    while !termino{
+        if(cant < 10){
             pendientes.send(archivo,id)
-            impresiones[id].receive(impresion)
             cant++
+        }
+        (!empty(impresiones[id]) ){
+            impresiones[id].receive(impresion)
             if(cant==10){
                 for i=1 to 3{
                     aviso[i].send(1)
@@ -437,6 +447,114 @@ Process Impresora[id:1..3]{
             aviso.receive(i)
             terminaron++
         }
+    }
+}
+```
+## D y E (sin busy waiting)
+```C
+chan pedidos(string,id)
+chan pedidosDirector(string,int)
+chan impresiones[1..N+1](string)
+chan avisoImpresora()
+chan terminarImpresora()
+chan impresora(string,id)
+chan impresoraDirector(string,id)
+chan avisoAdmin()
+
+Process Administrador{
+    int cant=0
+    string pedido
+    int id
+    while cant < (N+1)*10{
+        avisoAdmin.receive()
+        if (!empty(pedidos) && empty(pedidosDirector)){
+            pedidos.receive(pedido,id)
+            impresora.send(pedido,id)
+        }
+        (!empty(pedidosDirector)){
+            pedidosDirector.receive(pedido,id)
+            impresoraDirector.send(pedido,id)
+        }
+        avisoImpresora.send()
+        cant++
+    }
+    for i=1 to 3{
+        terminarImpresora.send()
+        avisoImpresora.send()
+    }
+}
+
+Process Administrativo[id:1..N]{
+    string impresion
+    string pedido
+    termino=false
+    cant=0
+    while(!termino){
+        if (!empty(impresiones[id])){
+            impresiones[id].receive(impresion)
+            if(cant==10){
+                termino=true
+            }
+        }
+        (cant < 10){
+            pedidos.send(pedido,id)
+            avisoAdmin.send()
+            cant++
+        }
+        (){
+            //trabaja
+        }
+        end if
+    }
+}
+Process Director{
+    string impresion
+    string pedido
+    termino=false
+    cant=0
+    id=N+1
+    while(!termino){
+        if (!empty(impresiones[id])){
+            impresiones[id].receive(impresion)
+            if(cant==10){
+                termino=true
+            }
+        }
+        (cant < 10){
+            pedidosDirector.send(pedido,id)
+            avisoAdmin.send()
+            cant++
+        }
+        (){
+            //trabaja
+        }
+        end if
+    }
+}
+
+
+Process impresora[1..3]{
+    string impresion
+    int id
+    strig pedido
+    termino=false
+    while !termino(){
+        avisoImpresora.receive()
+        if (!empty(terminarImpresora)){
+            terminarImpresora.receive()
+            termino=true
+        }
+        (!empty(impresora) && empty(impresoraDirector)){
+            impresora.receive(pedido,id)
+            //Imprime
+            impresiones[id].send(impresion)
+        }
+        (!empty(impresoraDirector)){
+            impresoraDirector.receive(pedido,id)
+            //Imprime
+            impresiones[id].send(impresion)
+        }
+        end if
     }
 }
 ```
