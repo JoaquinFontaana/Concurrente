@@ -103,6 +103,7 @@ Process Empleado[1..2]{
     }
 }
 ```
+___
 ## 2
 Se desea modelar el funcionamiento de un banco en el cual existen 5 cajas para realizar pagos. Existen P clientes que desean hacer un pago. Para esto, cada una selecciona la caja donde hay menos personas esperando; una vez seleccionada, espera a ser atendido. En cada caja, los clientes son atendidos por orden de llegada por los cajeros. Luego del pago, se les entrega un comprobante. Nota: maximizar la concurrencia.
 
@@ -157,7 +158,7 @@ Process Cliente[id:1..P]{
     respuesta[id].receive(comprobante)
 }
 ```
-
+---
 ### 3
 Se debe modelar el funcionamiento de una casa de comida rápida, en la cual trabajan 2 cocineros y 3 vendedores, y que debe atender a C clientes. El modelado debe considerar que:
 - Cada cliente realiza un pedido y luego espera a que se lo entreguen.
@@ -209,6 +210,7 @@ Process Cocinero[1..2]{
     }
 }
 ```
+---
 ### 4
 Simular la atención en un locutorio con 10 cabinas telefónicas, el cual tiene un empleado que se encarga de atender a N clientes. Al llegar, cada cliente espera hasta que el empleado le indique a qué cabina ir, la usa y luego se dirige al empleado para pagarle. El empleado atiende a los clientes en el orden en que hacen los pedidos. A cada cliente se le entrega un ticket factura por la operación.
 a) Implemente una solución para el problema descrito.
