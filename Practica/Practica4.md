@@ -452,7 +452,7 @@ Process Impresora[id:1..3]{
 ```
 ## D y E (sin busy waiting)
 ```C
-chan pedidos(string,id)
+chan pedidos(string,int)
 chan pedidosDirector(string,int)
 chan impresiones[1..N+1](string)
 chan avisoImpresora()
@@ -556,5 +556,121 @@ Process impresora[1..3]{
         }
         end if
     }
+}
+```
+---
+#### CONSIDERACIONES PARA RESOLVER LOS EJERCICIOS DE PASAJE DE MENSAJES SINCRÓNICO (PMS):
+
+• Los canales son punto a punto y no deben declararse.
+
+• No se puede usar la sentencia empty para saber si hay algún mensaje en un canal.
+
+• Tanto el envío como la recepción de mensajes es bloqueante.
+
+• Sintaxis de las sentencias de envío y recepción:
+ ```
+ Envío: nombreProcesoReceptor!port (datos a enviar)
+ Recepción: nombreProcesoEmisor?port (datos a recibir)
+ ```
+El port (o etiqueta) puede no ir. Se utiliza para diferenciar los tipos de mensajes que se podrían comunicarse entre dos procesos.
+
+• En la sentencia de comunicación de recepción se puede usar el comodín * si el origen es un proceso dentro de un arreglo de procesos. Ejemplo: Clientes[*]?port(datos).
+
+• Sintaxis de la Comunicación guardada:
+```
+ Guarda: (condición booleana); sentencia de recepción → sentencia a realizar
+ ```
+ Si no se especifica la condición booleana se considera verdadera (la condición booleana sólo puede hacer referencia a variables locales al proceso).
+ Cada guarda tiene tres posibles estados:
+
+ • Elegible: la condición booleana es verdadera y la sentencia de comunicación se puede resolver inmediatamente.
+
+ • No elegible: la condición booleana es falsa.
+
+ • Bloqueada: la condición booleana es verdadera y la sentencia de comunicación no se puede resolver inmediatamente.
+
+ Sólo se puede usar dentro de un if o un do guardado:
+ El if funciona de la siguiente manera: de todas las guardas elegibles se selecciona una en forma no determinística, se realiza la sentencia de comunicación correspondiente, y luego las acciones asociadas a esa guarda. Si todas las guardas tienen el estado de no elegibles, se sale sin hacer nada. Si no hay ninguna guarda elegible, pero algunas están en estado bloqueado, se queda esperando en el if hasta que alguna se vuelva elegible.
+
+El do funciona de la siguiente manera: sigue iterando de la misma manera que el if hasta que todas las guardas hasta que todas las guardas sean no elegibles.
+___
+## 1
+Suponga que existe un antivirus distribuido que se compone de R procesos robots Examinadores y 1 proceso Analizador. Los procesos Examinadores están buscando continuamente posibles sitios web infectados; cada vez que encuentran uno avisan la dirección y luego continúan buscando. El proceso Analizador se encarga de hacer todas las pruebas necesarias con cada uno de los sitios encontrados por los robots para determinar si están o no infectados.
+
+a) Analice el problema y defina qué procesos, recursos y comunicaciones serán necesarios/convenientes para resolverlo.
+
+b) Implemente una solución con PMS sin tener en cuenta el orden de los pedidos.
+
+c) Modifique el inciso (b) para que el Analizador resuelva los pedidos en el orden en que se hicieron.
+
+### A y B
+```C
+Process Examinador[1..R]{
+    string sitio
+    bool infectado
+    while(true){
+        //Selecciona sitio a examinar
+        //Examina el sitio
+        if(infectado){
+            analizador!(sitio)
+        }
+    }
+}
+
+Process Analizador{
+    string sitio
+    bool infectado
+    cola sitiosInfectados;
+    while true{
+        Examinador[*]?(sitio)
+        //Analiza el sitio
+        if(infectado){
+            sitiosInfectados.push(sitio)
+        }
+    }
+}
+```
+### C
+```C
+Process Examinador[1..R]{
+    string sitio
+    bool infectado
+    while(true){
+        //Selecciona sitio a examinar
+        //Examina el sitio
+        if(infectado){
+            admin!(sitio)
+        }
+    }
+}
+
+Process Analizador{
+    string sitio
+    bool infectado
+    cola sitiosInfectados;
+    while true{
+        Admin!pedido()
+        Admin?sitio(sitio)
+        //Analiza el sitio
+        if(infectado){
+            sitiosInfectados.push(sitio)
+        }
+    }
+}
+
+Process Admin{
+    cola pedidos;
+    string sitio
+    contador = 0
+    do 
+        (contador < R); Examinador[*]?(sitio){
+            contador++
+            cola.push(sitio)
+        }
+        (!pedidos.isEmpty()); Analizador?pedido(){
+            sitio = cola.pop()
+            Analizador!sitio(sitio)
+        }
+    od
 }
 ```
