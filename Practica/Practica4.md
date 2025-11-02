@@ -673,12 +673,45 @@ Process Admin{
     od
 }
 ```
+---
 ### 2
 En un laboratorio de genética veterinaria hay 3 empleados. El primero de ellos continuamente prepara las muestras de ADN; cada vez que termina, se la envía al segundo empleado y vuelve a su trabajo. El segundo empleado toma cada muestra de ADN preparada, arma el set de análisis que se deben realizar con ella y espera el resultado para archivarlo. Por último, el tercer empleado se encarga de realizar el análisis y devolverle el resultado al segundo empleado. 
 
 ```C
+Process Preparador{
+    cola muestras;
+    muestra
+    do
+        □ (!muestras.isEmpty()); Archivador!muestras(muestras.pop())
 
+        □ true; -> //Prepara muestra
+                    muestras.push(muestra)
+    od
+}
+
+Process Archivador{
+    muestras
+    setAnalisis 
+    string resultado
+    do 
+        □ (!muestra); Preparador?muestras(muestra) -> //Prepara el set de analisis
+                                                     Analizador!analisis(muestra,setAnalisis)
+                                                     muestra = null                                                   
+        □ Analizador?resultados(resultado) --> //Archiva el resultado
+    od
+}
+
+Process Analizador{
+    setAnalisis
+    muestra
+    resultado
+    do 
+        □ Archivador?analisis(muestra,setAnalisis) -> //Realiza analisis
+                                                        Archivador!resultados(resultado) 
+    od
+}
 ```
+---
 ### 3
 En un examen final hay N alumnos y P profesores. Cada alumno resuelve su examen, lo
 entrega y espera a que alguno de los profesores lo corrija y le indique la nota. Los
@@ -689,6 +722,7 @@ c) Ídem b) pero considerando que los alumnos no comienzan a realizar su examen 
 que todos hayan llegado al aula.
 Nota: maximizar la concurrencia; no generar demora innecesaria; todos los procesos deben
 terminar su ejecución
+___
 ### 4. 
 En una exposición aeronáutica hay un simulador de vuelo (que debe ser usado con
 exclusión mutua) y un empleado encargado de administrar su uso. Hay P personas que
@@ -700,6 +734,7 @@ su identificador (hasta que la persona i no lo haya usado, la persona i+1 debe e
 c) Modifique la solución a) para que el empleado considere el orden de llegada para dar
 acceso al simulador.
 Nota: cada persona usa sólo una vez el simulador.
+___
 ### 5.
  En un estadio de fútbol hay una máquina expendedora de gaseosas que debe ser usada por
 E Espectadores de acuerdo con el orden de llegada. Cuando el espectador accede a la
