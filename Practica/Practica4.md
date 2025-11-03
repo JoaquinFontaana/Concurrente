@@ -885,20 +885,100 @@ ___Nota: cada persona usa sólo una vez el simulador.___
 
 ### A
 ```c
-
+Process Empleado{
+    int id
+    while true{
+        Persona[*]?espera(id)
+        Persona[id]!usar()
+        Persona[id]?terminar()
+    }
+}
+Process Persona[id:1..P]{
+    Empleado!espera(id)
+    Empleado?usar()
+    //Usa el simulador
+    Empleado!terminar()
+}
 ```
 
 ### B
 ```c
-
+Process Empleado{
+    int turno = 1
+    while true{
+        Persona[turno]?espera()
+        Persona[turno]!usar()
+        Persona[turno]?terminar()
+        turno++
+    }
+}
+Process Persona[1..P]{
+    Empleado!espera()
+    Empleado?usar()
+    //Usa el simulador
+    Empleado!terminar()
+}
 ```
 
 ### C
 ```c
-
+Process Empleado{
+    int id
+    while true{
+        Admin!pedido()
+        Admin?espera(id)
+        Persona[id]!usar()
+        Persona[id]?terminar()
+    }
+}
+Process Persona[id:1..P]{
+    Admin!espera(id)
+    Empleado?usar()
+    //Usa el simulador
+    Empleado!terminar()
+}
+Process Admin{
+    cola esperando
+    int id
+    do
+        □ Persona[*]?espera(id) -> {
+            esperando.push(id)
+        }
+        □ (!espera.isEmpty()); Empleado?pedido() ->{
+            Empleado!espera(esperando.pop())
+        }
+    od
+}
 ```
 ___
-### 5.
+### 5
  En un estadio de fútbol hay una máquina expendedora de gaseosas que debe ser usada por E Espectadores de acuerdo con el orden de llegada. Cuando el espectador accede a la máquina en su turno usa la máquina y luego se retira para dejar al siguiente. 
 
 ___Nota: cadaEspectador una sólo una vez la máquina.___
+```c
+Process Maquina{
+    cola espera
+    bool libre = true
+    int id
+    int idUsando
+    do
+        □ Espectador[*]?espera(id) ->{
+            espera.push(id)
+        }
+        □ (libre && !espera.isEmpty()); ->{
+            idUsando = espera.pop()
+            Espectador[idUsando]!usar() 
+            libre = false
+        } 
+        □ (!libre); Espectador[idUsando]?terminar() ->{
+            libre=true
+        }
+    od
+}
+Process Espectador[id:1..E]{
+    Maquina!espera(id)
+    Maquina?usar()
+    //Usa la maquina
+    Maquina!terminar()
+}
+```
