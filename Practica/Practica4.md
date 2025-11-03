@@ -713,15 +713,166 @@ Process Analizador{
 ```
 ---
 ### 3
-En un examen final hay N alumnos y P profesores. Cada alumno resuelve su examen, lo
-entrega y espera a que alguno de los profesores lo corrija y le indique la nota. Los
-profesores corrigen los exámenes respetando el orden en que los alumnos van entregando.
+En un examen final hay N alumnos y P profesores. Cada alumno resuelve su examen, lo entrega y espera a que alguno de los profesores lo corrija y le indique la nota. Los profesores corrigen los exámenes respetando el orden en que los alumnos van entregando.
 a) Considerando que P=1.
+
 b) Considerando que P>1.
-c) Ídem b) pero considerando que los alumnos no comienzan a realizar su examen hasta
-que todos hayan llegado al aula.
-Nota: maximizar la concurrencia; no generar demora innecesaria; todos los procesos deben
-terminar su ejecución
+
+c) Ídem b) pero considerando que los alumnos no comienzan a realizar su examen hasta que todos hayan llegado al aula.
+
+Nota: maximizar la concurrencia; no generar demora innecesaria; todos los procesos deben terminar su ejecución
+
+### A
+``` c
+Process Profesor{
+    string examen
+    int nota
+    int id
+    int contador = 0
+    while contador < N{
+        Admin!pedido()
+        Admin?examenes(examen,id)
+        //Corrige el examen
+        Alumno[id]!correciones(nota)
+        contador++
+    }
+
+}
+Process Admin{
+    cola examenes
+    string examen
+    int id
+    int contador = 0
+    do
+        □ (contador < N); Alumno[*]?examenes(examen,id) -> {
+            examenes.push(examen,id)
+            contador++
+        }
+        □ (!empty(examenes)); Profesor?pedido() -> {
+            examen,id = examenes.pop()
+            Profesor!examenes(examen,id)
+        }
+    od
+}
+Process Alumno[id:1..N]{
+    string examen
+    int nota
+    //Hace el examen
+    Admin!examenes(examen,id)
+    Profesor?correciones(nota)
+}
+
+```
+
+### B
+```c
+Process Profesor[id:1..P]{
+    string examen
+    int nota
+    int idAlumno
+    bool termino = false
+    do
+        □ (!termino); Admin!pedido(id) -> {
+            Admin?examenes(examen,idAlumno)
+            //Corrige el examen
+            Alumno[idAlumno]!correciones(nota)
+        }
+        □ (!termino); Admin?avisoTerminacion() -> {
+            termino = true
+        }
+    od
+}
+Process Admin{
+    cola examenes
+    string examen
+    int idAlumno
+    int idProfesor
+    int contador = 0
+    do
+        □ (contador < N); Alumno[*]?examenes(examen,idAlumno) -> {
+            examenes.push(examen,idAlumno)
+            contador++
+        }
+
+        □ (!empty(examenes)); Profesor[*]?pedido(idProfesor) -> {
+            examen,idAlumno = examenes.pop()
+            Profesor[idProfesor]!examenes(examen,idAlumno)
+        }
+    od
+    for i=1 to P{
+        Profesor[i]!avisoTerminacion()
+    }
+}
+Process Alumno[id:1..N]{
+    string examen
+    int nota
+    //Hace el examen
+    Admin!examenes(examen,id)
+    Profesor[*]?correciones(nota)
+}
+```
+### C
+```c
+Process Profesor[id:1..P]{
+    string examen
+    int nota
+    int idAlumno
+    bool termino = false
+    do
+        □ (!termino); Admin!pedido(id) -> {
+            Admin?examenes(examen,idAlumno)
+            //Corrige el examen
+            Alumno[idAlumno]!correciones(nota)
+        }
+        □ (!termino); Admin?avisoTerminacion() -> {
+            termino = true
+        }
+    od
+}
+Process Admin{
+    cola examenes
+    string examen
+    int idAlumno
+    int idProfesor
+    int contador = 0
+    int listos = 0 
+    bool avisados = false
+    do
+        □ (listos < N); Alumno[*]?avisoAlumno() ->{
+            listos++
+        }
+        □ (listos == N && !avisados); -> { 
+            for i=1 to N{
+                Alumno[i]!avisoAlumno()
+            }
+            avisados = true
+        }
+    od
+    do
+        □ (contador < N); Alumno[*]?examenes(examen,idAlumno) -> {
+            examenes.push(examen,idAlumno)
+            contador++
+        }
+
+        □ (!empty(examenes)); Profesor[*]?pedido(idProfesor) -> {
+            examen,idAlumno = examenes.pop()
+            Profesor[idProfesor]!examenes(examen,idAlumno)
+        }
+    od
+    for i=1 to P{
+        Profesor[i]!avisoTerminacion()
+    }
+}
+Process Alumno[id:1..N]{
+    string examen
+    int nota
+    //Hace el examen
+    Admin!avisoAlumno()
+    Admin?avisoAlumno()
+    Admin!examenes(examen,id)
+    Profesor[*]?correciones(nota)
+}
+```
 ___
 ### 4. 
 En una exposición aeronáutica hay un simulador de vuelo (que debe ser usado con
