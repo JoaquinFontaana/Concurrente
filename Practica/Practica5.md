@@ -247,3 +247,137 @@ TASK BODY Camion IS
   Puente.salir(peso)
 END CAMION
 ```
+### 2
+Se quiere modelar el funcionamiento de un banco, al cual llegan clientes que deben realizar un pago y retirar un comprobante. Existe un único empleado en el banco, el cual atiende de acuerdo con el orden de llegada.  
+
+___a) Implemente una solución donde los clientes llegan y se retiran sólo después de haber sido atendidos.___
+
+___b) Implemente una solución donde los clientes se retiran si esperan más de 10 minutos para realizar el pago.___
+
+___c) Implemente una solución donde los clientes se retiran si no son atendidos  inmediatamente.___
+
+___d)  Implemente  una  solución  donde  los  clientes  esperan  a  lo  sumo  10  minutos para  ser atendidos. Si pasado ese lapso no fueron atendidos, entonces solicitan atención una vez más y se retiran si no son atendidos inmediatamente.___
+### A
+``` Ada
+TASK TYPE Empleado IS
+  ENTRY pagar(datosPago: IN String, comprobante: OUT String);
+END Empleado;
+
+TASK BODY Empleado IS
+  Loop
+    SELECT accept pagar(datosPago,comprobante) IS
+      //procesa el pago
+      comprobante = generarComprobante();
+    END SELECT;
+  END LOOP
+END Empleado 
+
+Task TYPE Cliente IS
+END CLIENTE;
+
+clientes: array(1..C) of Cliente;
+
+Task BODY Cliente IS\
+  string datosPago
+  string comprobante
+  Empleado.pagar(datosPago,comprobante)
+```
+
+### B
+``` Ada
+TASK TYPE Empleado IS
+  ENTRY pagar(datosPago: IN String, comprobante: OUT String);
+END Empleado;
+
+TASK BODY Empleado IS
+  Loop
+    SELECT accept pagar(datosPago,comprobante) IS
+      //procesa el pago
+      comprobante = generarComprobante();
+    END SELECT;
+  END LOOP
+END Empleado 
+
+Task TYPE Cliente IS
+END CLIENTE;
+
+clientes: array(1..C) of Cliente;
+
+Task BODY Cliente IS
+  string datosPago
+  string comprobante
+  SELECT Empleado.pagar(datosPago,comprobante)
+  OR DELAY 10
+  END SELECT
+END Cliente;  
+```
+
+### C
+``` Ada
+TASK TYPE Empleado IS
+  ENTRY pagar(datosPago: IN String, comprobante: OUT String);
+END Empleado;
+
+TASK BODY Empleado IS
+  Loop
+    SELECT accept pagar(datosPago,comprobante) IS
+      //procesa el pago
+      comprobante = generarComprobante();
+    END SELECT;
+  END LOOP
+END Empleado 
+
+Task TYPE Cliente IS
+END CLIENTE;
+
+clientes: array(1..C) of Cliente;
+
+Task BODY Cliente IS
+  string datosPago
+  string comprobante
+  SELECT Empleado.pagar(datosPago,comprobante)
+  END SELECT
+END Cliente;  
+```
+
+### D
+``` Ada
+TASK TYPE Empleado IS
+  ENTRY pagar(datosPago: IN String, comprobante: OUT String);
+END Empleado;
+
+TASK BODY Empleado IS
+  Loop
+    SELECT accept pagar(datosPago,comprobante) IS
+      //procesa el pago
+      comprobante = generarComprobante();
+    ELSE
+    END SELECT;
+  END LOOP
+END Empleado 
+
+Task TYPE Cliente IS
+END CLIENTE;
+
+clientes: array(1..C) of Cliente;
+
+Task BODY Cliente IS
+  string datosPago
+  string comprobante
+  SELECT Empleado.pagar(datosPago,comprobante)
+  OR DELAY 10
+    SELECT Empleado.pagar(datosPago,comprobante)
+    ELSE
+    END SELECT
+  END SELECT
+END Cliente;  
+```
+
+### 3
+Se  dispone  de  un  sistema  compuesto  por  1  central  y  2  procesos  periféricos,  que  se  comunican continuamente. Se requiere modelar su funcionamiento considerando las siguientes condiciones: 
+- La  central  siempre  comienza  su  ejecución  tomando  una  señal  del  proceso  1;  luego  toma  aleatoriamente  señales  de  cualquiera  de  los  dos  indefinidamente.  Al  recibir  una  señal de proceso 2, recibe señales del mismo proceso durante 3 minutos. 
+- Los  procesos  periféricos  envían  señales  continuamente  a  la  central.  La  señal  del  proceso  1  será  considerada  vieja  (se  deshecha)  si  en  2  minutos  no  fue  recibida.  Si  la señal del proceso 2 no puede ser recibida inmediatamente, entonces espera 1 minuto y  vuelve a mandarla (no se deshecha).
+  
+``` Ada
+
+```
