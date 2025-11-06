@@ -1,4 +1,4 @@
-# Practica 2
+# Practica 3
 ---
 ## Ejercicio 1
 Se dispone de un puente por el cual puede pasar un solo auto a la vez. Un auto pide permiso
