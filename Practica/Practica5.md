@@ -85,8 +85,7 @@ END SELECT;
 Funcionamiento:  Se  evalúa  la  condición  booleana  del  WHEN  de  cada  alternativa  (si  no lo tiene se considera TRUE). Si todas son FALSAS se sale del select. En otro caso,  de las alternativas cuya condición es verdadera se elige en forma no determinística una  que  pueda  ejecutarse  inmediatamente  (es  decir  que  tiene  un  entry  call  pendiente).  Si  ninguna de ellas se puede ejecutar inmediatamente el select se bloquea hasta que haya  un entry call para alguna alternativa cuya condición sea TRUE.  
 - Se puede poner una opción OR DELAY o ELSE (no las dos a la vez).  
 - Dentro de la condición booleana de una alternativa (en el WHEN) se puede preguntar  por la cantidad de entry call pendientes de cualquier entry de la tarea. NombreEntry’count  
-- Después de escribir una condición por medio de un WHEN siempre se debe escribir un 
-accept. 
+- Después de escribir una condición por medio de un WHEN siempre se debe escribir un accept. 
 ---
 ### 1
 Se requiere modelar un puente de un único sentido que soporta hasta 5 unidades de peso.  El peso de los vehículos depende del tipo: cada auto pesa 1 unidad, cada camioneta pesa 2  unidades y  cada  camión  3  unidades.  Suponga  que  hay  una  cantidad  innumerable  de vehículos  (A  autos,  B  camionetas  y  C  camiones).  Analice  el  problema  y  defina  qué  tareas, recursos y sincronizaciones serán necesarios/convenientes para resolverlo. 
@@ -434,7 +433,83 @@ Cuando una persona necesita que la atiendan espera a lo sumo 5 minutos a que el 
 Cuando una enfermera requiere la atención del médico, si este no lo atiende inmediatamente le  hace  una  nota  y  se  la  deja  en  el  consultorio  para  que  esta  resuelva  su  pedido  en  el momento  que  pueda  (el  pedido  puede  ser  que  el  médico  le  firme  algún  papel). Cuando  la petición  ha  sido  recibida  por  el  médico  o  la  nota  ha  sido  dejada  en  el  escritorio,  continúa trabajando y haciendo más peticiones.
 El médico atiende los pedidos dándole prioridad a los enfermos que llegan para ser atendidos. Cuando atiende un pedido, recibe la solicitud y la procesa durante un cierto tiempo. Cuando está libre aprovecha a procesar las notas dejadas por las enfermeras. 
  
-En  un  sistema  para  acreditar  carreras  universitarias,  hay  UN  Servidor  que  atiende  pedidos de  U  Usuarios  de  a  uno  a  la  vez  y  de  acuerdo  con  el  orden  en  que  se  hacen  los  pedidos. Cada  usuario  trabaja  en  el  documento  a  presentar,  y  luego  lo  envía  al  servidor;  espera  la respuesta de este que le indica si está todo bien o hay algún error. Mientras haya algún error,  vuelve a trabajar con el documento y a enviarlo al servidor. Cuando el servidor le responde que está todo bien, el usuario se retira. Cuando un usuario envía un pedido espera a lo sumo minutos a que sea recibido por el servidor, pasado ese tiempo espera un minuto y vuelve a  intentarlo (usando el mismo documento).
 ```Ada
+TASK TYPE Medico IS
+  ENTRY atencion();
+  ENTRY peticion(pedido: IN String);
+  ENTRY leerNota(pedido: IN String);
+END Medico
 
+TASK BODY MEDICO IS
+  LOOP
+    SELECT 
+      ACCEPT atencion() DO
+        //Atiende al paciente
+      END atencion
+      OR
+      WHEN(atencion'count=0) => ACCEPT peticion(pedido) DO
+        //Resuelve el pedido
+      END peticion
+      OR 
+      ELSE 
+        SELECT Nota.leerNota(pedido)
+          //Lee el pedido y lo resuelve
+        OR ELSE
+        END SELECT
+    END SELECT
+  END LOOP
+END MEDICO
+
+TASK TYPE Enfermera IS
+END Enfermera
+enfermeras: array(1..E) of Enfermera;
+
+TASK BODY Enfermera IS 
+  string pedido;
+  LOOP
+    //trabajando
+    SELECT Medico.peticion(pedido)
+    OR ELSE 
+      Nota.dejarNota(pedido)
+    END SELECT
+  END LOOP
+END Enfermera
+
+TASK TYPE Persona IS
+END Persona
+personas: array(1..P) of Persona;
+
+TASK BODY Persona IS
+  bool atendido = false
+  int contador = 3
+  while(contador > 0 AND !atendido)
+    SELECT Medico.atencion(); 
+      atendido=true
+    OR DELAY 5
+      contador--
+    END SELECT;
+    DELAY 10;
+END Persona
+
+TASK TYPE Nota IS
+  ENTRY dejarNota(pedido:IN String);
+  ENTRY leerNota(pedido:OUT String)
+END NOTAS;
+
+TASK BODY Nota IS
+  pedidos: cola(string)
+  LOOP 
+    SELECT 
+      WHEN(leerNota'count=0 OR pedidos.isEmpty()) => ACCEPT dejarNota(pedido) IS
+        pedidos.push(pedido)
+      END dejarNota
+      OR
+      WHEN(!pedidos.isEmpty()) => ACCEPT leerNota(pedido) IS
+        pedido = cola.pop()
+      END leerNota
+    END Select
+  END LOOP
+END Nota
 ```
+### 5
+En  un  sistema  para  acreditar  carreras  universitarias,  hay  UN  Servidor  que  atiende  pedidos de  U  Usuarios  de  a  uno  a  la  vez  y  de  acuerdo  con  el  orden  en  que  se  hacen  los  pedidos. Cada  usuario  trabaja  en  el  documento  a  presentar,  y  luego  lo  envía  al  servidor;  espera  la respuesta de este que le indica si está todo bien o hay algún error. Mientras haya algún error,  vuelve a trabajar con el documento y a enviarlo al servidor. Cuando el servidor le responde que está todo bien, el usuario se retira. Cuando un usuario envía un pedido espera a lo sumo minutos a que sea recibido por el servidor, pasado ese tiempo espera un minuto y vuelve a  intentarlo (usando el mismo documento).
