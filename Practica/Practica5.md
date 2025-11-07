@@ -550,3 +550,64 @@ TASK BODY Usuario IS
   END LOOP
 END Usuario
 ```
+### 6
+ En una playa hay 5 equipos de 4 personas cada uno (en total son 20 personas donde cada una  conoce  previamente  a  que  equipo  pertenece).  Cuando  las  personas  van  llegando  esperan  con  los  de  su  equipo  hasta  que  el  mismo  esté  completo  (hayan  llegado  los  4 integrantes), a partir de ese momento el equipo comienza a jugar. El juego consiste en que cada integrante del grupo junta 15 monedas de a una en una playa (las monedas pueden ser de  1,  2  o  5  pesos)  y  se  suman  los  montos  de  las  60  monedas  conseguidas  en  el  grupo.  Al finalizar  cada  persona  debe  conocer  el  grupo  que  más  dinero  junto.  Nota:  maximizar  la concurrencia.  Suponga  que  para  simular  la  búsqueda  de  una  moneda  por  parte  de  una persona existe una función Moneda() que retorna el valor de la moneda encontrada. 
+ ```Ada 
+TASK TYPE Persona IS
+  ENTRY comenzar();
+  ENTRY equipoGanador(equipoMax: IN integer);
+END PERSONA
+
+TYPE Equipo IS array(1..4) of Persona;
+equipos: array(1..5) of Equipo;
+
+TASK BODY Persona IS
+  int equipo
+  int cantMonedas = 0 
+  int moneda
+  ADMIN.llegoPersona(equipo)
+  ACCEPT comenzar();
+  while(cantMonedas < 15)
+    //busca moneda
+    moneda = Moneda()
+    ADMIN.sumarMoneda(equipo,moneda)
+    cantMonedas+=1
+  END LOOP
+  ACCEPT equipoGanador(equipoMax)
+END Persona
+
+TASK TYPE ADMIN IS
+  ENTRY llegoPersona(equipo: IN Integer);
+  ENTRY sumarMoneda(equipo: IN Integer,moneda: IN Integer)
+END ADMIN
+
+TASK BODY ADMIN IS
+  total: array(1..5) of Integer;
+  contadorPersonas: array(1..5) of Integer;
+  totalMonedas: array(1..5) of Integer;
+  integer cantMonedas = 0;
+  While(cantMonedas < 5*60) 
+    SELECT
+      ACCEPT llegoPersona(equipo) DO
+        contadorPersonas(equipo)++
+        IF (contadorPersonas(equipo) = 4) 
+          FOR i IN 1..4 LOOP
+            equipos(equipo)(i).comenzar()
+          END LOOP
+        END IF
+      END llegoPersona
+      OR
+      ACCEPT sumarMoneda(equipo,moneda) DO
+        cantMonedas++
+        totalMonedas(equipo) += moneda
+      END sumarMoneda
+    END SELECT
+  END LOOP
+  integer equipoMax= totalMonedas.max() //funcion que devuelve el indice con el valor maximo del array
+  FOR i IN 1..5 LOOP
+    FOR j IN 1..4 LOOP
+      equipos(i)(j).equipoGanador(equipoMax)
+    END LOOP
+  END LOOP
+END ADMIN
+ ```
